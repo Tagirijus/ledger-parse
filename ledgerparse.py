@@ -109,6 +109,21 @@ class ledger_account(object):
 
 # functions
 
+def string_to_non_transactions(text):
+	# returns a string with all the stuff in a ledger journal, which are no transactions
+
+	# get original
+	output = text
+
+	# iterate every transaction
+	for trans in PAT_TRANSACTION.findall(text):
+		# delet this transaction from the output
+		output = output.replace( trans, '' )
+
+	# strip and return the output string
+	return output.strip()
+
+
 def string_to_ledger(text):
 	# returns an array of [ledger_transaction]s from the given string (ledger-journal)
 
