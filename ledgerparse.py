@@ -2,11 +2,15 @@
 
 import re, datetime
 
+# decimal seperator for string output
+dec_sep = ','
+
 # general ledger regex
 PAT_TRANSACTION = re.compile(r'(\d.+(?:\n[^\S\n\r]{1,}.+)+)')
 PAT_TRANSACTION_DATA = re.compile(r'(?P<year>\d{4})[/|-](?P<month>\d{2})[/|-](?P<day>\d{2})(?:=(?P<year_aux>\d{4})[/|-](?P<month_aux>\d{2})[/|-](?P<day_aux>\d{2}))? (?P<state>[\*|!])?[ ]?(\((?P<code>\d+)\) )?(?P<payee>.+)')
 PAT_COMMENT = re.compile(r'[^\S\n\r]{1,};(.+)')
-PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>.+)[^\S\n\r]{2,}(:?(?P<commodity_front>.+)?[^\S\n\r]{1,})?(?P<amount>\d+[,|\.]?(?:\d+)?)(?:[^\S\n\r]{1,}(?P<commodity_back>.+))?')
+PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)(?:[^\S\n\r]{2,})(:?(?P<commodity_front>[^\d].+)?[^\S\n\r]{1,})?(?P<amount>\d+[,|\.]?(?:\d+)?)?(?:[^\S\n\r]{1,}(?P<commodity_back>[^\d].+))?')
+PAT_ACCOUNT_ONLY = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)')
 
 
 # ledgerparse classes
@@ -23,6 +27,39 @@ class ledger_transaction(object):
 		self.original = original
 
 	def __str__(self):
+		# generat a transaction output string
+		output = ''
+
+		# get date
+		tmp_date = self.date.strftime('%Y-%m-%d')
+
+		# get aux date
+		tmp_aux_date = '=' + self.aux_date.strftime('%Y-%m-%d') if self.aux_date else ''
+
+		# get state
+		tmp_state = ' ' + self.state if self.state else ''
+
+		# get code
+		tmp_code = ' (' + self.code + ')' if self.code else ''
+
+		# get payee
+		tmp_payee = ' ' + self.payee
+
+		# get comments
+		if len(self.comments) > 0:
+			tmp_comments = '\n ;' + '\n ;'.join(self.comments)
+		else:
+			tmp_comments = ''
+
+		# get accounts with its comments
+		tmp_accounts = '\n' + '\n'.join( [str(x) for x in self.accounts] )
+
+		# generate the output string
+		output = tmp_date + tmp_aux_date + tmp_state + tmp_code + tmp_payee + tmp_comments + tmp_accounts
+
+		return output
+
+	def get_original(self):
 		return self.original
 
 	def add_account(self, name, commodity, amount):
@@ -44,14 +81,26 @@ class ledger_account(object):
 		self.comments = [] # [ str: comment ]
 
 	def __str__(self):
+		# generate an account output string
+		output = ''
+
+		# get the name
+		tmp_name = self.name
+
+		# get the commodity
+		tmp_commodity = '  ' + self.commodity + ' ' if self.commodity else ''
+
+		# get amount
+		tmp_amount = str(self.amount).replace('.', dec_sep) if self.amount > 0 else ''
+
 		# get comments
 		if len(self.comments) > 0:
-			tmp_comments = '\n' + '\n ;'.join(self.comments)
+			tmp_comments = '\n ;' + '\n ;'.join(self.comments)
 		else:
 			tmp_comments = ''
 
 		# return string for this account
-		return ' ' + self.name + '  ' + self.commodity + ' ' + str(self.amount) + tmp_comments
+		return ' ' + tmp_name + tmp_commodity + tmp_amount + tmp_comments
 
 	def add_comment(self, text):
 		self.comments.append(text)
@@ -82,9 +131,10 @@ def string_to_transaction(text):
 	# iterate through the lines of the string
 	for line in text.splitlines():
 		# do the matches
-		m_trans		= PAT_TRANSACTION_DATA.match(line)
-		m_comment	= PAT_COMMENT.match(line)
-		m_account	= PAT_ACCOUNT.match(line)
+		m_trans			= PAT_TRANSACTION_DATA.match(line)
+		m_comment		= PAT_COMMENT.match(line)
+		m_account		= PAT_ACCOUNT.match(line)
+		m_account_only	= PAT_ACCOUNT_ONLY.match(line)
 
 		# the line is the transaction header
 		if m_trans:
@@ -119,7 +169,7 @@ def string_to_transaction(text):
 			# set last to trans
 			last = 'Trans'
 
-		# the line is an account
+		# the line is an account with commodity and an amount
 		elif m_account and not last == 'None':
 
 			# get its name
@@ -138,6 +188,24 @@ def string_to_transaction(text):
 				tmp_amount = float( m_account.group('amount').replace(',', '.') )
 			except Exception:
 				tmp_amount = 0.0
+
+			# add this account to the output ledger_transaction
+			output.add_account(tmp_name, tmp_commodity, tmp_amount)
+
+			# set last to Acc
+			last = 'Acc'
+
+		# the line is an account with only the account name
+		elif m_account_only and not last == 'None':
+
+			# get its name
+			tmp_name = m_account_only.group('account')
+
+			# get the commodity
+			tmp_commodity = ''
+
+			# get the amount
+			tmp_amount = 0.0
 
 			# add this account to the output ledger_transaction
 			output.add_account(tmp_name, tmp_commodity, tmp_amount)
