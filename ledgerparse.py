@@ -1,2 +1,160 @@
 # coding=utf-8
 
+import re, datetime
+
+# general ledger regex
+PAT_TRANSACTION = re.compile(r'(\d.+(?:\n[^\S\n\r]{1,}.+)+)')
+PAT_TRANSACTION_DATA = re.compile(r'(?P<year>\d{4})[/|-](?P<month>\d{2})[/|-](?P<day>\d{2})(?:=(?P<year_aux>\d{4})[/|-](?P<month_aux>\d{2})[/|-](?P<day_aux>\d{2}))? (?P<state>[\*|!])?[ ]?(\((?P<code>\d+)\) )?(?P<payee>.+)')
+PAT_COMMENT = re.compile(r'[^\S\n\r]{1,};(.+)')
+PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>.+)[^\S\n\r]{2,}(:?(?P<commodity_front>.+)?[^\S\n\r]{1,})?(?P<amount>\d+[,|\.]?(?:\d+)?)(?:[^\S\n\r]{1,}(?P<commodity_back>.+))?')
+
+
+# ledgerparse classes
+
+class ledger_transaction(object):
+	def __init__(self, date, aux_date, state, code, payee, original):
+		self.date = date
+		self.aux_date = aux_date
+		self.state = state
+		self.code = code
+		self.payee = payee
+		self.comments = [] # [ str: comment ]
+		self.accounts = [] # [ ledger_account ]
+		self.original = original
+
+	def __str__(self):
+		return self.original
+
+	def add_account(self, name, commodity, amount):
+		self.accounts.append( ledger_account(name, commodity, amount) )
+
+	def add_comment_to_last_account(self, text):
+		if len(self.accounts) > 0:
+			self.accounts[ len(self.accounts)-1 ].add_comment(text)
+
+	def add_comment(self, text):
+		self.comments.append(text)
+
+
+class ledger_account(object):
+	def __init__(self, name, commodity, amount):
+		self.name = name
+		self.commodity = commodity
+		self.amount = amount
+		self.comments = [] # [ str: comment ]
+
+	def __str__(self):
+		# get comments
+		if len(self.comments) > 0:
+			tmp_comments = '\n' + '\n ;'.join(self.comments)
+		else:
+			tmp_comments = ''
+
+		# return string for this account
+		return ' ' + self.name + '  ' + self.commodity + ' ' + str(self.amount) + tmp_comments
+
+	def add_comment(self, text):
+		self.comments.append(text)
+
+
+
+# functions
+
+def string_to_ledger(text):
+	# returns an array of [ledger_transaction]s from the given string (ledger-journal)
+
+	# init the output array
+	output = []
+
+	# iterate through all transaction-regex matches
+	for trans in PAT_TRANSACTION.findall(text):
+		output.append( string_to_transaction(trans) )
+
+	# output the result
+	return output
+
+def string_to_transaction(text):
+	# returns a [ledger_transaction] object from the given string
+
+	# init variables
+	last = 'None'
+
+	# iterate through the lines of the string
+	for line in text.splitlines():
+		# do the matches
+		m_trans		= PAT_TRANSACTION_DATA.match(line)
+		m_comment	= PAT_COMMENT.match(line)
+		m_account	= PAT_ACCOUNT.match(line)
+
+		# the line is the transaction header
+		if m_trans:
+
+			# get the date
+			tmp_date = datetime.datetime( int(m_trans.group('year')), int(m_trans.group('month')), int(m_trans.group('day')) )
+
+			# get the aux date
+			if m_trans.group('year_aux') != None and m_trans.group('month_aux') != None and m_trans.group('day_aux') != None:
+				tmp_date_aux = datetime.datetime( int(m_trans.group('year_aux')), int(m_trans.group('month_aux')), int(m_trans.group('day_aux')) )
+			else:
+				tmp_date_aux = None
+
+			# get the state
+			if m_trans.group('state') != None:
+				tmp_state = m_trans.group('state')
+			else:
+				tmp_state = ''
+
+			# get the code
+			if m_trans.group('code') != None:
+				tmp_code = m_trans.group('code')
+			else:
+				tmp_code = ''
+
+			# get the payee
+			tmp_payee = m_trans.group('payee')
+
+			# generate ledger_transaction output
+			output = ledger_transaction(tmp_date, tmp_date_aux, tmp_state, tmp_code, tmp_payee, text)
+
+			# set last to trans
+			last = 'Trans'
+
+		# the line is an account
+		elif m_account and not last == 'None':
+
+			# get its name
+			tmp_name = m_account.group('account')
+
+			# get the commodity
+			if m_account.group('commodity_front') != None:
+				tmp_commodity = m_account.group('commodity_front')
+			elif m_account.group('commodity_back') != None:
+				tmp_commodity = m_account.group('commodity_back')
+			else:
+				tmp_commodity = ''
+
+			# get the amount
+			try:
+				tmp_amount = float( m_account.group('amount').replace(',', '.') )
+			except Exception:
+				tmp_amount = 0.0
+
+			# add this account to the output ledger_transaction
+			output.add_account(tmp_name, tmp_commodity, tmp_amount)
+
+			# set last to Acc
+			last = 'Acc'
+
+		# the line is a comment
+		elif m_comment and not last == 'None':
+
+			# it belongs to the transaction
+			if last == 'Trans':
+				output.add_comment(m_comment.group(1))
+
+			# it belongs to the last added account
+			elif last == 'Acc':
+				output.add_comment_to_last_account(m_comment.group(1))
+
+	# output the ledger_transaction object
+	return output if not last == 'None' else None
