@@ -17,3 +17,7 @@ If you would like to sort a non-sorted ledger-journal, you could use this script
 	f.close()
 
 	SORTED_JOURNAL_STRING = '\n\n'.join([str(x) for x in sorted(ledgerparse.string_to_ledger(JOURNAL_STRING), key=lambda y: y.date)])
+
+	f = open('ledger_sorted.journal', 'w')
+	f.write(SORTED_JOURNAL_STRING)
+	f.close()
