@@ -9,7 +9,7 @@ dec_sep = ','
 PAT_TRANSACTION = re.compile(r'(\d.+(?:\n[^\S\n\r]{1,}.+)+)')
 PAT_TRANSACTION_DATA = re.compile(r'(?P<year>\d{4})[/|-](?P<month>\d{2})[/|-](?P<day>\d{2})(?:=(?P<year_aux>\d{4})[/|-](?P<month_aux>\d{2})[/|-](?P<day_aux>\d{2}))? (?P<state>[\*|!])?[ ]?(\((?P<code>\d+)\) )?(?P<payee>.+)')
 PAT_COMMENT = re.compile(r'[^\S\n\r]{1,};(.+)')
-PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)(?:[^\S\n\r]{2,})(:?(?P<commodity_front>[^\d].+)?[^\S\n\r]{1,})?(?P<amount>\d+[,|\.]?(?:\d+)?)?(?:[^\S\n\r]{1,}(?P<commodity_back>[^\d].+))?')
+PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)(?:[^\S\n\r]{2,})(:?(?P<commodity_front>[^\d].+)?[^\S\n\r]{1,})?(?P<amount>[-+]?\d+[,|\.]?(?:\d+)?)?(?:[^\S\n\r]{1,}(?P<commodity_back>[^\d].+))?')
 PAT_ACCOUNT_ONLY = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)')
 
 
@@ -91,7 +91,7 @@ class ledger_account(object):
 		tmp_commodity = '  ' + self.commodity + ' ' if self.commodity else ''
 
 		# get amount
-		tmp_amount = str(self.amount).replace('.', dec_sep) if self.amount > 0 else ''
+		tmp_amount = str(self.amount).replace('.', dec_sep) if self.amount != 0 else ''
 
 		# get comments
 		if len(self.comments) > 0:
