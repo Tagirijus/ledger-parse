@@ -7,7 +7,7 @@ dec_sep = ','
 
 # general ledger regex
 PAT_TRANSACTION = re.compile(r'(\d.+(?:\n[^\S\n\r]{1,}.+)+)')
-PAT_TRANSACTION_DATA = re.compile(r'(?P<year>\d{4})[/|-](?P<month>\d{2})[/|-](?P<day>\d{2})(?:=(?P<year_aux>\d{4})[/|-](?P<month_aux>\d{2})[/|-](?P<day_aux>\d{2}))? (?P<state>[\*|!])?[ ]?(\((?P<code>\d+)\) )?(?P<payee>.+)')
+PAT_TRANSACTION_DATA = re.compile(r'(?P<year>\d{4})[/|-](?P<month>\d{2})[/|-](?P<day>\d{2})(?:=(?P<year_aux>\d{4})[/|-](?P<month_aux>\d{2})[/|-](?P<day_aux>\d{2}))? (?P<state>[\*|!])?[ ]?(\((?P<code>[^\)].+)\) )?(?P<payee>.+)')
 PAT_COMMENT = re.compile(r'[^\S\n\r]{1,};(.+)')
 PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)(?:[^\S\n\r]{2,})(:?(?P<commodity_front>[^\d].+)?[^\S\n\r]{1,})?(?P<amount>[-+]?\d+[,|\.]?(?:\d+)?)?(?:[^\S\n\r]{1,}(?P<commodity_back>[^\d].+))?')
 PAT_ACCOUNT_ONLY = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)')
@@ -71,6 +71,14 @@ class ledger_transaction(object):
 
 	def add_comment(self, text):
 		self.comments.append(text)
+
+	def balance_account(self, id):
+		own_amount = self.accounts[id].amount
+		others = 0.0
+		for which, acc in enumerate(self.accounts):
+			if not which == id:
+				others += acc.amount
+		return own_amount - others
 
 
 class ledger_account(object):
