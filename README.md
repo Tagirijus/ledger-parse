@@ -10,14 +10,16 @@ A good workflow for me is: generating a symbolic link to my python2.7 lib path s
 
 If you would like to sort a non-sorted ledger-journal, you could use this script like this:
 
-	import ledgerparse
+```python
+import ledgerparse
 
-	f = open('ledger.journal')
-	JOURNAL_STRING = f.read()
-	f.close()
+f = open('ledger.journal')
+JOURNAL_STRING = f.read()
+f.close()
 
-	SORTED_JOURNAL_STRING = '\n\n'.join([str(x) for x in sorted(ledgerparse.string_to_ledger(JOURNAL_STRING), key=lambda y: y.date)])
+SORTED_JOURNAL_STRING = '\n\n'.join([str(x) for x in sorted(ledgerparse.string_to_ledger(JOURNAL_STRING), key=lambda y: y.date)])
 
-	f = open('ledger_sorted.journal', 'w')
-	f.write(SORTED_JOURNAL_STRING)
-	f.close()
+f = open('ledger_sorted.journal', 'w')
+f.write(SORTED_JOURNAL_STRING)
+f.close()
+```
