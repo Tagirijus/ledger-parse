@@ -74,11 +74,14 @@ class ledger_transaction(object):
 
 	def balance_account(self, id):
 		own_amount = self.accounts[id].amount
-		others = 0.0
-		for which, acc in enumerate(self.accounts):
-			if not which == id:
-				others += acc.amount
-		return own_amount - others
+		if own_amount != 0.0:
+			return own_amount
+		else:
+			others = 0.0
+			for which, acc in enumerate(self.accounts):
+				if not which == id:
+					others += acc.amount
+			return own_amount - others
 
 
 class ledger_account(object):
