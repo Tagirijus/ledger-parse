@@ -15,6 +15,93 @@ PAT_ACCOUNT_ONLY = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)')
 
 # ledgerparse classes
 
+class Money(object):
+	def __init__(self, amount='0', real_amount=None, dec_sep=','):
+		self.dec_sep = dec_sep
+		self.amount = self.get_amount(amount) if real_amount == None else real_amount
+
+	def get_amount(self, amount):
+		# get rid of the thousand seperator
+		if self.dec_sep == ',':
+			amount = amount.replace('.', '')
+		else:
+			amount = amount.replace(',', '')
+
+		# return integer from amount string
+
+		# there is something behind the decimal seperator
+		if self.dec_sep in amount:
+			behind = amount.split(self.dec_sep)[1]
+			if len(behind) == 1:
+				behind += '000'
+			elif len(behind) == 2:
+				behind += '00'
+			elif len(behind) == 3:
+				behind += '0'
+			elif len(behind) > 4:
+				last_digit = int(behind[3])
+				after_last_digit = int(behind[4])
+				if after_last_digit >= 5:
+					last_digit += 1
+				behind = behind[:3] + str(last_digit)
+			return int( amount.split(self.dec_sep)[0] + behind )
+
+		# there is no decimal seperator at all
+		else:
+			return int( amount ) * 10000
+
+	def str_amount(self):
+		# amount is positive
+		if self.amount > 0:
+			# return something like 0,NNNN
+			if self.amount < 10000:
+				return '0' + self.dec_sep + self.behind_decimal( str(self.amount)[-4:] )
+			# return something like N,NNN
+			else:
+				return str(self.amount)[:-4] + self.dec_sep + self.behind_decimal( str(self.amount)[-4:] )
+
+		# amount is negative
+		elif self.amount < 0:
+			# return something like -0,NNNN
+			if self.amount > -10000:
+				return '-0' + self.dec_sep + self.behind_decimal( str(self.amount)[-4:] )
+			# return something like -N,NNN
+			else:
+				return str(self.amount)[:-4] + self.dec_sep + self.behind_decimal( str(self.amount)[-4:] )
+
+	def behind_decimal(self, value_string):
+		# generate leading zeros
+		if len(value_string) == 3:
+			value_string = '0' + value_string
+		elif len(value_string) == 2:
+			value_string = '00' + value_string
+		elif len(value_string) == 1:
+			value_string = '000' + value_string
+
+		# get rid of last zero at the end - two times
+		if value_string[-1:] == '0':
+			value_string = value_string[:-1]
+		if value_string[-1:] == '0':
+			value_string = value_string[:-1]
+
+		return value_string
+
+	def __str__(self):
+		return self.str_amount()
+
+	def __add__(self,other):
+		return Money(real_amount=self.amount+other.amount)
+
+	def __sub__(self,other):
+		return Money(real_amount=self.amount-other.amount)
+
+	def __div__(self,other):
+		return Money(real_amount=self.amount/other)
+
+	def __mul__(self,other):
+		return Money(real_amount=self.amount*other)
+
+
 class ledger_transaction(object):
 	def __init__(self, date, aux_date, state, code, payee, original):
 		self.date = date
@@ -72,23 +159,27 @@ class ledger_transaction(object):
 	def add_comment(self, text):
 		self.comments.append(text)
 
-	def balance_account(self, id):
-		own_amount = self.accounts[id].amount
-		if own_amount != 0.0:
-			return own_amount
+	def balance_account(self, id, negative=False):
+		# get negatvie multiplicator
+		multi = -1 if negative else 1
+
+		# returns a Money object with the amount of the account with the given id
+		own_amount = self.accounts[id].amount.amount
+		if own_amount != 0:
+			return Money(real_amount=self.accounts[id].amount.amount * multi)
 		else:
-			others = 0.0
+			others = 0
 			for which, acc in enumerate(self.accounts):
 				if not which == id:
-					others += acc.amount
-			return own_amount - others
+					others += acc.amount.amount
+			return Money(real_amount=(own_amount - others) * multi )
 
 
 class ledger_account(object):
 	def __init__(self, name, commodity, amount):
 		self.name = name
 		self.commodity = commodity
-		self.amount = amount
+		self.amount = Money(amount, dec_sep=dec_sep)
 		self.comments = [] # [ str: comment ]
 
 	def __str__(self):
@@ -102,7 +193,7 @@ class ledger_account(object):
 		tmp_commodity = '  ' + self.commodity + ' ' if self.commodity else ''
 
 		# get amount
-		tmp_amount = str(self.amount).replace('.', dec_sep) if self.amount != 0 else ''
+		tmp_amount = self.amount
 
 		# get comments
 		if len(self.comments) > 0:
@@ -210,10 +301,7 @@ def string_to_transaction(text):
 				tmp_commodity = ''
 
 			# get the amount
-			try:
-				tmp_amount = float( m_account.group('amount').replace(',', '.') )
-			except Exception:
-				tmp_amount = 0.0
+			tmp_amount = m_account.group('amount')
 
 			# add this account to the output ledger_transaction
 			output.add_account(tmp_name, tmp_commodity, tmp_amount)
@@ -231,7 +319,7 @@ def string_to_transaction(text):
 			tmp_commodity = ''
 
 			# get the amount
-			tmp_amount = 0.0
+			tmp_amount = '0'
 
 			# add this account to the output ledger_transaction
 			output.add_account(tmp_name, tmp_commodity, tmp_amount)
