@@ -200,7 +200,7 @@ class ledger_account(object):
 		tmp_commodity = '  ' + self.commodity + ' ' if self.commodity else ''
 
 		# get amount
-		tmp_amount = str(self.amount)
+		tmp_amount = str(self.amount) if self.amount.amount != 0 else ''
 
 		# get comments
 		tmp_comments = '\n ;' + '\n ;'.join(self.comments) if len(self.comments) > 0 else ''
