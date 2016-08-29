@@ -69,6 +69,10 @@ class Money(object):
 			else:
 				return str(self.amount)[:-4] + self.dec_sep + self.behind_decimal( str(self.amount)[-4:] )
 
+		# amount is zero
+		else:
+			return '0' + self.dec_sep + '00'
+
 	def behind_decimal(self, value_string):
 		# generate leading zeros
 		if len(value_string) == 3:
@@ -87,6 +91,9 @@ class Money(object):
 		return value_string
 
 	def __str__(self):
+		return self.str_amount()
+
+	def __repr__(self):
 		return self.str_amount()
 
 	def __add__(self,other):
@@ -193,13 +200,10 @@ class ledger_account(object):
 		tmp_commodity = '  ' + self.commodity + ' ' if self.commodity else ''
 
 		# get amount
-		tmp_amount = self.amount
+		tmp_amount = str(self.amount)
 
 		# get comments
-		if len(self.comments) > 0:
-			tmp_comments = '\n ;' + '\n ;'.join(self.comments)
-		else:
-			tmp_comments = ''
+		tmp_comments = '\n ;' + '\n ;'.join(self.comments) if len(self.comments) > 0 else ''
 
 		# return string for this account
 		return ' ' + tmp_name + tmp_commodity + tmp_amount + tmp_comments
