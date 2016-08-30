@@ -21,6 +21,10 @@ class Money(object):
 		self.amount = self.get_amount(amount) if real_amount == None else real_amount
 
 	def get_amount(self, amount):
+		# amount is zero, if amount is not a matching string
+		if not type(amount) == str:
+			amount = '0'
+
 		# get rid of the thousand seperator
 		if self.dec_sep == ',':
 			amount = amount.replace('.', '')
