@@ -390,5 +390,5 @@ def ledger_file_to_string(ledger_file):
 			if '\n' in line:
 				OUT += '\n'
 
-	# return the final ledger journal string
+	# return the final ledger journal string - bam!
 	return OUT
