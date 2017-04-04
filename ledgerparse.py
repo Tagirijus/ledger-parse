@@ -6,7 +6,7 @@ import re, datetime, os
 dec_sep = ','
 
 # general ledger regex
-PAT_TRANSACTION = re.compile(r'(\d.+(?:\n[^\S\n\r]{1,}.+)+)')
+PAT_TRANSACTION = re.compile(r'[^\S](\d.+(?:\n[^\S\n\r]{1,}.+)+)')
 PAT_TRANSACTION_DATA = re.compile(r'(?P<year>\d{4})[/|-](?P<month>\d{2})[/|-](?P<day>\d{2})(?:=(?P<year_aux>\d{4})[/|-](?P<month_aux>\d{2})[/|-](?P<day_aux>\d{2}))? (?P<state>[\*|!])?[ ]?(\((?P<code>[^\)].+)\) )?(?P<payee>.+)')
 PAT_COMMENT = re.compile(r'[^\S\n\r]{1,};(.+)')
 PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)(?:[^\S\n\r]{2,})(:?(?P<commodity_front>[^\d].+)?[^\S\n\r]{1,})?(?P<amount>[-+]?\d+[,|\.]?(?:\d+)?)?(?:[^\S\n\r]{1,}(?P<commodity_back>[^\d].+))?')
@@ -242,6 +242,9 @@ def string_to_ledger(text):
 
 	# iterate through all transaction-regex matches
 	for trans in PAT_TRANSACTION.findall(text):
+		print 'DEBUG:'
+		print trans
+		print '--- --- ---'
 		output.append( string_to_transaction(trans) )
 
 	# output the result
