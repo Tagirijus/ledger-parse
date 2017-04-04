@@ -430,7 +430,7 @@ def replace_alias(original, replace_dict):
 	# or just use the original string
 	else:
 		work_with_me = original
-		apend = ''
+		append = ''
 
 	# check if the account is in the dict
 	if work_with_me in replace_dict:
