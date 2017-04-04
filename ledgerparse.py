@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import re, datetime
+import re, datetime, os
 
 # decimal seperator for string output
 dec_sep = ','
@@ -247,6 +247,7 @@ def string_to_ledger(text):
 	# output the result
 	return output
 
+
 def string_to_transaction(text):
 	# returns a [ledger_transaction] object from the given string
 
@@ -348,3 +349,46 @@ def string_to_transaction(text):
 
 	# output the ledger_transaction object
 	return output if not last == 'None' else None
+
+
+def ledger_file_to_string(ledger_file):
+	# init the output variable
+	OUT = ''
+
+	# check if file exists and load it
+	if os.path.isfile(ledger_file):
+		f = open(ledger_file, 'r')
+		FILE = f.readlines()
+		f.close()
+		# and get its path
+		PATH = os.path.dirname( os.path.abspath(ledger_file) )
+	else:
+		return ''
+
+	# append it to the final output, till "include" occurs
+	for line in FILE:
+		if line.lower().find('include ') != 0:
+			OUT += line
+		# otherwise try to load the given file
+		else:
+			# get filename
+			include_me = line.replace('include ', '').strip()
+
+			# check if there is a wildcard in it
+			if '*' in include_me:
+				# cycle through the files, if there are some and append there content
+				regex = include_me.replace('.', '\.').replace('*', '.*')
+				for filename in os.listdir(PATH):
+					if re.match(regex, filename):
+						if len(OUT) != 0:
+							OUT += '\n\n'
+						f = open(os.path.join(PATH, filename), 'r')
+						OUT += f.read()
+						f.close()
+
+			# newline at the end of the found "include ..." if there is one
+			if '\n' in line:
+				OUT += '\n'
+
+	# return the final ledger journal string
+	return OUT
