@@ -372,23 +372,23 @@ def ledger_file_to_string(ledger_file):
 		# otherwise try to load the given file
 		else:
 			# get filename
-			include_me = line.replace('include ', '').strip()
+			include_me = line.replace('include ', '').replace('Include ', '').strip()
 
-			# check if there is a wildcard in it
-			if '*' in include_me:
-				# cycle through the files, if there are some and append there content
-				regex = include_me.replace('.', '\.').replace('*', '.*')
-				for filename in os.listdir(PATH):
-					if re.match(regex, filename):
-						if len(OUT) != 0:
-							OUT += '\n\n'
-						f = open(os.path.join(PATH, filename), 'r')
-						OUT += f.read()
-						f.close()
+			# cycle through the files, if there are some and append their content
+			# also replace wildcard with regex-wildcard
+			regex = include_me.replace('.', '\.').replace('*', '.*')
+			got_a_file = 0
+			for filename in os.listdir(PATH):
+				if re.match(regex, filename):
+					if got_a_file != 0:
+						OUT += '\n\n'
+					got_a_file = 1
+					f = open(os.path.join(PATH, filename), 'r')
+					OUT += f.read()
+					f.close()
 
 			# newline at the end of the found "include ..." if there is one
-			if '\n' in line:
-				OUT += '\n'
+			OUT += '\n' if '\n' in line else ''
 
 	# return the final ledger journal string - bam!
 	return OUT
