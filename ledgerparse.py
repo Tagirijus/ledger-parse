@@ -6,7 +6,7 @@ import re, datetime, os
 dec_sep = ','
 
 # general ledger regex
-PAT_TRANSACTION = re.compile(r'[^\S](\d.+(?:\n[^\S\n\r]{1,}.+)+)')
+PAT_TRANSACTION = re.compile(r'(\d{4,}.+(?:\n[^\S\n\r]{1,}.+)+)')
 PAT_TRANSACTION_DATA = re.compile(r'(?P<year>\d{4})[/|-](?P<month>\d{2})[/|-](?P<day>\d{2})(?:=(?P<year_aux>\d{4})[/|-](?P<month_aux>\d{2})[/|-](?P<day_aux>\d{2}))? (?P<state>[\*|!])?[ ]?(\((?P<code>[^\)].+)\) )?(?P<payee>.+)')
 PAT_COMMENT = re.compile(r'[^\S\n\r]{1,};(.+)')
 PAT_ACCOUNT = re.compile(r'[^\S\n\r]{1,}(?P<account>[^;].+)(?:[^\S\n\r]{2,})(:?(?P<commodity_front>[^\d].+)?[^\S\n\r]{1,})?(?P<amount>[-+]?\d+[,|\.]?(?:\d+)?)?(?:[^\S\n\r]{1,}(?P<commodity_back>[^\d].+))?')
@@ -234,21 +234,27 @@ def string_to_non_transactions(text):
 	return output.strip()
 
 
-def string_to_ledger(text):
+def string_to_ledger(text, aliases=False):
 	# returns an array of [ledger_transaction]s from the given string (ledger-journal)
+
+	# get aliases from file, if enabled
+	if aliases:
+		ALIAS = get_aliases_from_string(text)
+	else:
+		ALIAS = {}
 
 	# init the output array
 	output = []
 
 	# iterate through all transaction-regex matches
 	for trans in PAT_TRANSACTION.findall(text):
-		output.append( string_to_transaction(trans) )
+		output.append( string_to_transaction(trans, ALIAS) )
 
 	# output the result
 	return output
 
 
-def string_to_transaction(text):
+def string_to_transaction(text, aliases={}):
 	# returns a [ledger_transaction] object from the given string
 
 	# init variables
@@ -300,6 +306,9 @@ def string_to_transaction(text):
 
 			# get its name
 			tmp_name = m_account.group('account')
+			# aliase it, if enabled / aliases exists
+			if len(aliases) != 0:
+				tmp_name = replace_alias(tmp_name, aliases)
 
 			# get the commodity
 			if m_account.group('commodity_front') != None:
@@ -323,6 +332,9 @@ def string_to_transaction(text):
 
 			# get its name
 			tmp_name = m_account_only.group('account')
+			# aliase it, if enabled / aliases exists
+			if len(aliases) != 0:
+				tmp_name = replace_alias(tmp_name, aliases)
 
 			# get the commodity
 			tmp_commodity = ''
@@ -392,3 +404,37 @@ def ledger_file_to_string(ledger_file):
 
 	# return the final ledger journal string - bam!
 	return OUT
+
+
+def get_aliases_from_string(ledger_journal_string):
+	# init output dict
+	OUT = {}
+
+	# cycle through ledger journal lines and find "alias" in the beginning of the line
+	for l in ledger_journal_string.splitlines():
+		if l[0:5] == 'alias':
+			# get the alias
+			tmp = l.replace('alias ', '').split('=')
+			if len(tmp) == 2:
+				OUT[tmp[0].strip()] = tmp[1].strip()
+
+	# output the result
+	return OUT
+
+
+def replace_alias(original, replace_dict):
+	# check if there are subaccounts and use the first
+	if ':' in original:
+		work_with_me = original[ 0:original.find(':') ]
+		append = original[ original.find(':'): ]
+	# or just use the original string
+	else:
+		work_with_me = original
+		apend = ''
+
+	# check if the account is in the dict
+	if work_with_me in replace_dict:
+		return replace_dict[ work_with_me ] + append
+	# or just return the original
+	else:
+		return original
