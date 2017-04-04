@@ -132,7 +132,7 @@ class ledger_transaction(object):
 		tmp_date = self.date.strftime('%Y-%m-%d')
 
 		# get aux date
-		tmp_aux_date = '=' + self.aux_date.strftime('%Y-%m-%d') if self.aux_date else ''
+		tmp_aux_date = '=' + self.aux_date.strftime('%Y-%m-%d') if self.aux_date != self.date else ''
 
 		# get state
 		tmp_state = ' ' + self.state if self.state else ''
@@ -278,7 +278,7 @@ def string_to_transaction(text, aliases={}):
 			if m_trans.group('year_aux') != None and m_trans.group('month_aux') != None and m_trans.group('day_aux') != None:
 				tmp_date_aux = datetime.datetime( int(m_trans.group('year_aux')), int(m_trans.group('month_aux')), int(m_trans.group('day_aux')) )
 			else:
-				tmp_date_aux = None
+				tmp_date_aux = tmp_date
 
 			# get the state
 			if m_trans.group('state') != None:
