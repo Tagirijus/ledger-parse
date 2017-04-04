@@ -242,9 +242,6 @@ def string_to_ledger(text):
 
 	# iterate through all transaction-regex matches
 	for trans in PAT_TRANSACTION.findall(text):
-		print 'DEBUG:'
-		print trans
-		print '--- --- ---'
 		output.append( string_to_transaction(trans) )
 
 	# output the result
