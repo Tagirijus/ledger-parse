@@ -94,6 +94,21 @@ class Money(object):
 
 		return value_string
 
+	def __lt__(self, other):
+		return self.amount < other.amount
+
+	def __le__(self, other):
+		return self.amount <= other.amount
+
+	def __gt__(self, other):
+		return self.amount > other.amount
+
+	def __ge__(self, other):
+		return self.amount >= other.amount
+
+	def __eq__(self, other):
+		return self.amount == other.amount
+
 	def __str__(self):
 		return self.str_amount()
 
@@ -103,16 +118,16 @@ class Money(object):
 	def __repr__(self):
 		return self.str_amount()
 
-	def __add__(self,other):
+	def __add__(self, other):
 		return Money(real_amount=self.amount+other.amount)
 
-	def __sub__(self,other):
+	def __sub__(self, other):
 		return Money(real_amount=self.amount-other.amount)
 
-	def __div__(self,other):
+	def __div__(self, other):
 		return Money(real_amount=self.amount/other)
 
-	def __mul__(self,other):
+	def __mul__(self, other):
 		return Money(real_amount=self.amount*other)
 
 
