@@ -97,6 +97,9 @@ class Money(object):
 	def __str__(self):
 		return self.str_amount()
 
+	def __int__(self):
+		return self.amount
+
 	def __repr__(self):
 		return self.str_amount()
 
