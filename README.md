@@ -62,6 +62,8 @@ JOUNRAL[0].accounts[0].comments     # list of strings
 
 Simple: teh native ledger module which comes with the ledger-cli programm gets all the ledger journal trasactions as `postings`. A posting can have the connected transaction payee etc. ... but it does not really parse the transactions. I wanted a parser which is closer to the journal like you are probably write: a list of transactions.
 
+IMPORTANT: This module is NOT for calculating like ledger is (at least not YET).
+
 # Example
 
 If you would like to sort a non-sorted ledger-journal, you could use this script like this:
