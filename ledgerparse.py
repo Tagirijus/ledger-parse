@@ -205,7 +205,7 @@ class ledger_transaction(object):
 
 	def balance_accountname(self, accountname, negative=False):
 		for i, account in enumerate(self.accounts):
-			if accountname == account.name:
+			if accountname.lower() in account.name.lower():
 				return self.balance_account(i, negative)
 		return Money()
 
