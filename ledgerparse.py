@@ -446,8 +446,12 @@ def get_aliases_from_string(ledger_journal_string):
 	return OUT
 
 
-def replace_alias(original, replace_dict):
-	# check if there are subaccounts and use the first
+def replace_alias(original, replace_dict, second_pass=False):
+	# TODO:
+	# aliases, which use other aliases are not being
+	# replaced.
+
+	# check if there are subaccounts and use these first
 	if ':' in original:
 		work_with_me = original[ 0:original.find(':') ]
 		append = original[ original.find(':'): ]
