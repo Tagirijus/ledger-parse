@@ -78,6 +78,10 @@ class Money(object):
 			return '0' + self.dec_sep + '00'
 
 	def behind_decimal(self, value_string):
+		# get rid of negative sign, which can occur for amounts
+		# lower than 0,10 (e.g. 0,07)
+		value_string = value_string.replace('-', '')
+
 		# generate leading zeros
 		if len(value_string) == 3:
 			value_string = '0' + value_string
