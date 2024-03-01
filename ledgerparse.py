@@ -203,6 +203,12 @@ class ledger_transaction(object):
 					others += acc.amount.amount
 			return Money(real_amount=(own_amount - others) * multi )
 
+	def balance_accountname(self, accountname, negative=False):
+		for i, account in enumerate(self.accounts):
+			if accountname == account.name:
+				return self.balance_account(i, negative)
+		return Money()
+
 
 class ledger_account(object):
 	def __init__(self, name, commodity, amount):
