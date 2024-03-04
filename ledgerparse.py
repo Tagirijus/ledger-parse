@@ -416,7 +416,7 @@ def ledger_file_to_string(ledger_file):
 
 			# cycle through the files, if there are some and append their content
 			# also replace wildcard with regex-wildcard
-			regex = include_me.replace('.', '\.').replace('*', '.*')
+			regex = include_me.replace('.', '\.').replace('*', '.*') + '$'
 			got_a_file = 0
 			for filename in os.listdir(PATH):
 				if re.match(regex, filename):
